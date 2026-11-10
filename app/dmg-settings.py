@@ -1,4 +1,4 @@
-# dmgbuild settings for the macos-dockwake disk image.
+# dmgbuild settings for the Unstick disk image.
 # scripts/build-app.sh passes -D app=<path to .app> -D background=<tiff> -D icon=<icns>.
 import os.path
 

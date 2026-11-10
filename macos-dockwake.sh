@@ -14,7 +14,7 @@
 # the Dock right away, any time.
 #
 # This is the Terminal version. For a menu bar app that installs like any other
-# Mac app, download it from https://github.com/RosBradley/macos-dockwake/releases
+# Mac app that also restarts Finder, download Unstick from https://github.com/RosBradley/macos-unstick/releases
 #
 # Usage:
 #   ./macos-dockwake.sh install     build and start the background watcher

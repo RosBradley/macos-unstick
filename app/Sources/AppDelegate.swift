@@ -4,30 +4,55 @@ import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    private let resetter = DockResetter()
-    private var statusItem: NSStatusItem?
-    private var shortcutStatus: OSStatus = noErr
+    /// A menu item and its keyboard shortcut, Control+Option+Command+<key>.
+    private struct Shortcut {
+        let target: Target
+        let id: UInt32
+        let keyCode: Int
+        let key: String
+        let item: NSMenuItem
+        /// nil until registration is tried.
+        var status: OSStatus?
+        var description: String { "Control-Option-Command-\(key.uppercased())" }
+    }
 
-    private let restartItem = NSMenuItem(
-        title: "Restart Dock Now", action: #selector(AppDelegate.restartFromMenu), keyEquivalent: "d")
-    private let shortcutNoteItem = NSMenuItem(
-        title: "Keyboard shortcut unavailable", action: nil, keyEquivalent: "")
+    private let restarter = Restarter()
+    private var statusItem: NSStatusItem?
+    private var shortcuts: [Shortcut] = []
+
+    private let shortcutNoteItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let wakeItem = NSMenuItem(
         title: "Restart Dock After Wake or Unlock", action: #selector(AppDelegate.toggleWake),
         keyEquivalent: "")
     private let loginItem = NSMenuItem(
         title: "Start at Login", action: #selector(AppDelegate.toggleLogin), keyEquivalent: "")
 
+    override init() {
+        super.init()
+        shortcuts = [
+            Shortcut(target: .dock, id: 1, keyCode: kVK_ANSI_D, key: "d", item: NSMenuItem(
+                title: "Restart Dock", action: #selector(AppDelegate.restartDock), keyEquivalent: "d")),
+            Shortcut(target: .finder, id: 2, keyCode: kVK_ANSI_F, key: "f", item: NSMenuItem(
+                title: "Restart Finder", action: #selector(AppDelegate.restartFinder), keyEquivalent: "f")),
+        ]
+    }
+
     // MARK: - Launch
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.write("app started (version \(AppInfo.version))")
+        OldApp.copySettings()
+        let oldAppWasRunning = OldApp.quitIfRunning()
         setUpMenu()
+        registerShortcuts(retries: 3)
+        observeWakeAndUnlock()
         if TerminalVersion.isInstalled {
             offerToRemoveTerminalVersion()
         }
-        registerShortcut(retries: 3)
-        observeWakeAndUnlock()
+        let oldCopies = OldApp.installedCopies
+        if !oldCopies.isEmpty {
+            offerToRemoveOldApp(oldCopies, wasRunning: oldAppWasRunning)
+        }
         if !UserDefaults.standard.bool(forKey: Settings.welcomedKey) {
             UserDefaults.standard.set(true, forKey: Settings.welcomedKey)
             showWelcome()
@@ -44,7 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func setUpMenu() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        let image = NSImage(systemSymbolName: "dock.rectangle", accessibilityDescription: AppInfo.name)
+        let image = NSImage(
+            systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: AppInfo.name)
         image?.isTemplate = true
         item.button?.image = image
         item.button?.toolTip = AppInfo.name
@@ -57,9 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        restartItem.keyEquivalentModifierMask = [.control, .option, .command]
-        restartItem.target = self
-        menu.addItem(restartItem)
+        for shortcut in shortcuts {
+            shortcut.item.keyEquivalentModifierMask = [.control, .option, .command]
+            shortcut.item.target = self
+            menu.addItem(shortcut.item)
+        }
         shortcutNoteItem.isEnabled = false
         shortcutNoteItem.isHidden = true
         menu.addItem(shortcutNoteItem)
@@ -94,15 +122,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .requiresApproval: loginItem.state = .mixed
         default: loginItem.state = .off
         }
-        let shortcutWorks = shortcutStatus == noErr
-        restartItem.keyEquivalent = shortcutWorks ? "d" : ""
-        shortcutNoteItem.isHidden = shortcutWorks
+        // A shortcut another app holds isn't shown next to its item.
+        var unavailable: [String] = []
+        for shortcut in shortcuts {
+            let works = shortcut.status == noErr
+            shortcut.item.keyEquivalent = works ? shortcut.key : ""
+            if !works { unavailable.append("⌃⌥⌘\(shortcut.key.uppercased())") }
+        }
+        shortcutNoteItem.title = unavailable.count == 1
+            ? "Shortcut \(unavailable[0]) unavailable"
+            : "Shortcuts \(unavailable.joined(separator: " and ")) unavailable"
+        shortcutNoteItem.isHidden = unavailable.isEmpty
     }
 
     // MARK: - Actions
 
-    @objc private func restartFromMenu() {
-        resetter.restartNow("menu")
+    @objc private func restartDock() {
+        restarter.restartNow(.dock, "menu")
+    }
+
+    @objc private func restartFinder() {
+        restarter.restartNow(.finder, "menu")
     }
 
     @objc private func toggleWake() {
@@ -148,7 +188,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.terminate(nil)
     }
 
-    // MARK: - Wake, unlock and the keyboard shortcut
+    // MARK: - Wake, unlock and the keyboard shortcuts
 
     private func observeWakeAndUnlock() {
         let workspace = NSWorkspace.shared.notificationCenter
@@ -169,24 +209,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func wakeEvent(_ reason: String) {
         guard Settings.restartAfterWake else { return }
-        resetter.schedule(reason)
+        restarter.scheduleDockAfterWake(reason)
     }
 
-    /// Retries briefly: a Terminal version that was just removed may still be
-    /// releasing the same shortcut.
-    private func registerShortcut(retries: Int) {
-        shortcutStatus = HotKey.register { [weak self] in
-            self?.resetter.restartNow("keyboard shortcut")
+    /// Retries briefly: an old version that was just quit may still be
+    /// releasing the Dock shortcut.
+    private func registerShortcuts(retries: Int) {
+        var failed = false
+        for index in shortcuts.indices where shortcuts[index].status != noErr {
+            let shortcut = shortcuts[index]
+            let target = shortcut.target
+            let status = HotKey.register(id: shortcut.id, keyCode: shortcut.keyCode) { [weak self] in
+                self?.restarter.restartNow(target, "keyboard shortcut")
+            }
+            shortcuts[index].status = status
+            if status == noErr {
+                Log.write("keyboard shortcut \(shortcut.description) ready")
+            } else if retries > 0 {
+                failed = true
+            } else {
+                Log.write("keyboard shortcut \(shortcut.description) unavailable (error \(status)); another app may be using it")
+            }
         }
-        if shortcutStatus == noErr {
-            Log.write("keyboard shortcut \(HotKey.description) ready")
-        } else if retries > 0 {
+        if failed {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(1))
-                self.registerShortcut(retries: retries - 1)
+                self.registerShortcuts(retries: retries - 1)
             }
-        } else {
-            Log.write("keyboard shortcut unavailable (error \(shortcutStatus)); another app may be using it")
         }
     }
 
@@ -194,8 +243,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func offerToRemoveTerminalVersion() {
         let alert = NSAlert()
-        alert.messageText = "Remove the Terminal version of \(AppInfo.name)?"
-        alert.informativeText = "The version installed with macos-dockwake.sh is also on this Mac. With both running, the Dock would restart twice after each wake, and the keyboard shortcut would only work in one of them. This app replaces it."
+        alert.messageText = "Remove the Terminal version of macos-dockwake?"
+        alert.informativeText = "The version installed with macos-dockwake.sh is also on this Mac. With both running, the Dock would restart twice after each wake, and the Dock keyboard shortcut would only work in one of them. \(AppInfo.name) replaces it."
         alert.addButton(withTitle: "Remove It")
         alert.addButton(withTitle: "Keep Both")
         bringToFront()
@@ -209,10 +258,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private func offerToRemoveOldApp(_ copies: [URL], wasRunning: Bool) {
+        let alert = NSAlert()
+        alert.messageText = "Move \(OldApp.name) to the Trash?"
+        var text = "\(OldApp.name) is this app's old name, and \(AppInfo.name) replaces it."
+        if wasRunning { text += " \(AppInfo.name) has quit it" }
+        text += wasRunning ? " and kept its settings." : " \(AppInfo.name) has kept its settings."
+        text += "\n\nIf you keep it and it starts at login, both apps would restart the Dock after each wake."
+        alert.informativeText = text
+        alert.addButton(withTitle: "Move to Trash")
+        alert.addButton(withTitle: "Keep It")
+        bringToFront()
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        if !OldApp.moveToTrash(copies) {
+            showAlert(
+                "Couldn't move \(OldApp.name) to the Trash",
+                "Drag \(OldApp.name) from your Applications folder to the Trash yourself.")
+        }
+    }
+
     private func showWelcome() {
         let alert = NSAlert()
         alert.messageText = "\(AppInfo.name) is running"
-        var text = "Its icon is in the menu bar at the top right of your screen.\n\nIt restarts the Dock a few seconds after your Mac wakes or unlocks, which clears the macOS 27 Dock, full-screen and Spaces glitches. Press \(HotKey.description) any time to restart the Dock right away."
+        let dock = shortcuts[0].description, finder = shortcuts[1].description
+        var text = "Its icon is in the menu bar at the top right of your screen.\n\nIt restarts the Dock a few seconds after your Mac wakes or unlocks, which clears the macOS 27 Dock, full-screen and Spaces glitches.\n\nWhen something gets stuck, press \(dock) to restart the Dock, or \(finder) to restart Finder."
         if !AppInfo.isInApplicationsFolder {
             text += "\n\nMove \(AppInfo.name) to your Applications folder before turning on Start at Login."
         }

@@ -1,10 +1,10 @@
 import Foundation
 
-/// Appends timestamped lines to ~/Library/Logs/macos-dockwake.log, the same
-/// file the Terminal version writes, so Show Log opens it in Console.
+/// Appends timestamped lines to ~/Library/Logs/Unstick.log, which Show Log
+/// opens in Console.
 enum Log {
     static let url = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Logs/macos-dockwake.log")
+        .appendingPathComponent("Library/Logs/Unstick.log")
 
     static func write(_ message: String) {
         let line = "\(Date.now.formatted(.iso8601))  \(message)\n"

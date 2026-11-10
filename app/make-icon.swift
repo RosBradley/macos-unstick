@@ -1,4 +1,4 @@
-// Draws the 1024x1024 app icon: a blue rounded square with a white Dock symbol.
+// Draws the 1024x1024 app icon: a blue rounded square with a white restart symbol.
 // Usage: make-icon <output.png>
 import AppKit
 
@@ -21,7 +21,7 @@ NSGradient(colors: [
 ])!.draw(in: tile, angle: -90)
 
 let config = NSImage.SymbolConfiguration(pointSize: 400, weight: .medium)
-if let symbol = NSImage(systemSymbolName: "dock.rectangle", accessibilityDescription: nil)?
+if let symbol = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: nil)?
     .withSymbolConfiguration(config)
 {
     let size = symbol.size

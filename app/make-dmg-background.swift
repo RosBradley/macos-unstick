@@ -52,7 +52,7 @@ NSGradient(colors: [rgb(78, 140, 240), rgb(46, 104, 222)])!
     .draw(in: box(0, 0, width, bandHeight), angle: -90)
 
 let white = NSColor.white
-NSAttributedString(string: "Install macos-dockwake", attributes: [
+NSAttributedString(string: "Install Unstick", attributes: [
     .font: NSFont.systemFont(ofSize: 22, weight: .bold), .foregroundColor: white,
     .paragraphStyle: { let p = NSMutableParagraphStyle(); p.alignment = .center; return p }(),
 ]).draw(in: box(0, 16, width, 30))
@@ -87,7 +87,7 @@ styled("**The first time you open it**", size: 15, color: dark).draw(in: box(40,
 let steps = [
     "macOS says it can't verify the app. Click **Done**.",
     "Open **System Settings > Privacy & Security** and scroll down.",
-    "Click **Open Anyway** next to macos-dockwake, then **Open**.",
+    "Click **Open Anyway** next to Unstick, then **Open**.",
 ]
 for (i, step) in steps.enumerated() {
     let top = bandHeight + 40 + CGFloat(i) * 25

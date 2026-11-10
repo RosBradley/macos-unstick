@@ -1,6 +1,6 @@
-# Builds macos-dockwake.app on a GitHub Mac and publishes it as a Release.
+# Builds Unstick.app on a GitHub Mac and publishes it as a Release.
 #
-# Publish a version:  git tag v1.0.0 && git push origin v1.0.0
+# Publish a version:  git tag v1.1.0 && git push origin v1.1.0
 # Test a build only:  Actions tab > Release > Run workflow
 #                     (the files appear under the run's Artifacts; nothing is published)
 
@@ -38,7 +38,7 @@ jobs:
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dockwake-test-build
+          name: Unstick-test-build
           path: |
             build/*.dmg
             build/*.zip
@@ -49,5 +49,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" build/*.dmg build/*.zip \
-            --title "macos-dockwake ${GITHUB_REF_NAME#v}" \
+            --title "Unstick ${GITHUB_REF_NAME#v}" \
             --notes-file .github/release-notes.md

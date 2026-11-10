@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Builds macos-dockwake.app and packages it for a GitHub Release.
+# Builds Unstick.app and packages it for a GitHub Release.
 #
 # Output in build/:
-#   macos-dockwake.app             the app (Apple silicon and Intel)
-#   macos-dockwake-<version>.dmg   disk image with an install arrow and first-launch steps
-#   macos-dockwake-<version>.zip   zip of the app
+#   Unstick.app                    the app (Apple silicon and Intel)
+#   Unstick-<version>.dmg          disk image with an install arrow and first-launch steps
+#   Unstick-<version>.zip          zip of the app
 #
 # Usage:
 #   scripts/build-app.sh
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-NAME="macos-dockwake"
+NAME="Unstick"
 VERSION="${VERSION:-$(git -C "$ROOT" describe --tags --abbrev=0 2>/dev/null || true)}"
 VERSION="${VERSION#v}"
 VERSION="${VERSION:-0.0.0}"

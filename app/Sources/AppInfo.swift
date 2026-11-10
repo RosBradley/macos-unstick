@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppInfo {
-    static let name = "macos-dockwake"
+    static let name = "Unstick"
 
     static var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
@@ -17,7 +17,7 @@ enum AppInfo {
 }
 
 /// Settings, stored with UserDefaults. Delay and cooldown have no menu items;
-/// they can be changed with `defaults write io.github.rosbradley.macos-dockwake`.
+/// they can be changed with `defaults write io.github.rosbradley.unstick`.
 enum Settings {
     static let restartAfterWakeKey = "RestartAfterWake"
     static let delayKey = "Delay"
