@@ -12,7 +12,7 @@ hide_extensions = [app_name]
 icon = defines["icon"]
 
 background = defines["background"]
-window_rect = ((200, 140), (660, 460))
+window_rect = ((200, 140), (660, 430))
 default_view = "icon-view"
 show_status_bar = False
 show_tab_view = False
@@ -26,6 +26,6 @@ label_pos = "bottom"
 # Icon centers, measured from the window's top left; they match the arrow
 # in make-dmg-background.swift.
 icon_locations = {
-    app_name: (165, 150),
-    "Applications": (495, 150),
+    app_name: (165, 130),
+    "Applications": (495, 130),
 }

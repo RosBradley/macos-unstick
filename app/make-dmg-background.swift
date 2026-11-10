@@ -4,14 +4,16 @@
 //
 // Finder draws the icon labels itself, white in dark mode and black in light
 // mode, so the band behind the icons is a mid blue that keeps both readable.
-// Icon centers (set in dmg-settings.py) are app (165, 150), Applications (495, 150).
+// Icon centers (set in dmg-settings.py) are app (165, 130), Applications (495, 130).
+// Everything sits in the top 360 points, because Finder windows that show the
+// path bar and status bar cover about 55 points at the bottom.
 import AppKit
 
 let output = URL(fileURLWithPath: CommandLine.arguments[1])
 let scale = CGFloat(Double(CommandLine.arguments[2]) ?? 1)
 let width: CGFloat = 660
-let height: CGFloat = 460
-let bandHeight: CGFloat = 262
+let height: CGFloat = 430
+let bandHeight: CGFloat = 222
 
 let rep = NSBitmapImageRep(
     bitmapDataPlanes: nil, pixelsWide: Int(width * scale), pixelsHigh: Int(height * scale),
@@ -53,12 +55,12 @@ let white = NSColor.white
 NSAttributedString(string: "Install macos-dockwake", attributes: [
     .font: NSFont.systemFont(ofSize: 22, weight: .bold), .foregroundColor: white,
     .paragraphStyle: { let p = NSMutableParagraphStyle(); p.alignment = .center; return p }(),
-]).draw(in: box(0, 22, width, 30))
+]).draw(in: box(0, 16, width, 30))
 styled("Drag the app onto the Applications folder.", size: 14, color: rgb(255, 255, 255, 0.88), align: .center)
-    .draw(in: box(0, 54, width, 20))
+    .draw(in: box(0, 47, width, 20))
 
 // Arrow between the two icons.
-let arrowY = height - 150
+let arrowY = height - 130
 let shaft = NSBezierPath()
 shaft.move(to: NSPoint(x: 258, y: arrowY))
 shaft.line(to: NSPoint(x: 388, y: arrowY))
@@ -80,7 +82,7 @@ box(0, bandHeight, width, height - bandHeight).fill()
 
 let dark = rgb(29, 29, 31)
 let body = rgb(60, 60, 67)
-styled("**The first time you open it**", size: 15, color: dark).draw(in: box(40, bandHeight + 18, 580, 22))
+styled("**The first time you open it**", size: 15, color: dark).draw(in: box(40, bandHeight + 12, 580, 22))
 
 let steps = [
     "macOS says it can't verify the app. Click **Done**.",
@@ -88,7 +90,7 @@ let steps = [
     "Click **Open Anyway** next to macos-dockwake, then **Open**.",
 ]
 for (i, step) in steps.enumerated() {
-    let top = bandHeight + 50 + CGFloat(i) * 28
+    let top = bandHeight + 40 + CGFloat(i) * 25
     let circle = NSBezierPath(ovalIn: box(40, top, 20, 20))
     rgb(46, 104, 222).setFill()
     circle.fill()
@@ -97,9 +99,9 @@ for (i, step) in steps.enumerated() {
 }
 
 styled(
-    "You only do this once. macOS asks because macos-dockwake isn't signed with a paid Apple developer account.",
+    "You only do this once. macOS asks because the app isn't signed by a paid Apple developer.",
     size: 12, color: rgb(110, 110, 115)
-).draw(in: box(40, bandHeight + 142, 580, 36))
+).draw(in: box(40, bandHeight + 118, 580, 18))
 
 NSGraphicsContext.restoreGraphicsState()
 try rep.representation(using: .png, properties: [:])!.write(to: output)
