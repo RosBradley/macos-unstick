@@ -41,12 +41,13 @@ On macOS 27.0.1, the Dock, Mission Control and Spaces can get into a stuck state
 - **Full-screen apps keep the Dock and menu bar drawn over them.** This was seen with Outlook, but any full-screen app can be affected.
 - **Three-finger swipes between Spaces stop working**, sometimes only for a while.
 
-This is a known macOS 27 bug, not something wrong with your Mac. As of October 26, 2026:
+This is a known macOS 27 bug, not something wrong with your Mac. As of November 9, 2026:
 
 - macOS 27.0.1 does not fix it.
 - There is no macOS 27.1 for Macs.
 - macOS 27.2, released October 26, doesn't mention a fix. Its notes cover Siri, Messages and security fixes, and nothing about the Dock, Mission Control, Spaces or full screen.
-- Testers reported the bug was still present in the 27.2 betas, and no one has reported it fixed in the final release.
+- Testers reported the bug was still present in the 27.2 betas.
+- On our test Mac, 27.2 made the wrong-app Dock clicks less frequent, but they still happen, so the bug isn't fully fixed.
 
 
 ## Why restarting the Dock helps
@@ -113,7 +114,7 @@ None of these fix the bug, but together they reduce how often it happens:
 
 To remove its log too, delete `~/Library/Logs/macos-dockwake.log`.
 
-**When to uninstall.** Once a macOS update fixes the bug, you won't need it. macOS 27.2 doesn't fix it, so check the release notes for 27.3 and later.
+**When to uninstall.** Once a macOS update fixes the bug, you won't need it. macOS 27.2 improves things but doesn't fully fix it, so check the release notes for 27.3 and later.
 
 ## Terminal version
 
