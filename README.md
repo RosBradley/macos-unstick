@@ -16,7 +16,7 @@ Unstick was called macos-dockwake before version 1.1.
 5. Open **System Settings > Privacy & Security**. Scroll down to the message about Unstick, and click **Open Anyway**. Enter your password if asked.
 6. In the welcome message, click **Start at Login**.
 
-Its icon, two circling arrows, then appears in the menu bar at the top right of your screen. You only approve the app once.
+Its icon, two circling arrows above four colored dots, then appears in the menu bar at the top right of your screen. You only approve the app once.
 
 **Why macOS warns about it.** Apple only skips that warning for apps signed with a paid Apple Developer account. Unstick isn't, but its full source code is in this repository, and the app is built from it by GitHub, not on someone's own computer. See [Building the app](#building-the-app) for how.
 

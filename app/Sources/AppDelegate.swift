@@ -69,10 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func setUpMenu() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        let image = NSImage(
-            systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: AppInfo.name)
-        image?.isTemplate = true
-        item.button?.image = image
+        item.button?.image = MenuBarIcon.make()
         item.button?.toolTip = AppInfo.name
 
         let menu = NSMenu()
